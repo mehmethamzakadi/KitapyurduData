@@ -1,21 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace KitapyurduData;
 
-namespace KitapyurduData;
-
-public class MenuManager
+public class MenuManager(string[] items)
 {
-    private string[] menuItems;
-    private int selectedIndex;
-
-    public MenuManager(string[] items)
-    {
-        menuItems = items;
-        selectedIndex = 0;
-    }
+    private readonly string[] menuItems = items;
+    private int selectedIndex = 0;
 
     public int DisplayMenu()
     {

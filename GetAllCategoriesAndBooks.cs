@@ -109,6 +109,10 @@ public class GetAllCategoriesAndBooks
                 Console.WriteLine("Kategori bilgisi bulunamadı.");
             }
         }
+        else
+        {
+            Console.WriteLine("Kategoriler zaten eklenmiş.. Lütfen bekleyiniz..");
+        }
         #endregion
 
         #region Kitapları Getir ve Ekle

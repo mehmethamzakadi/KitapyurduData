@@ -8,7 +8,6 @@ public class GetNewlyAddedBooks
 {
     public static async Task Execute(BookLibraryContext context)
     {
-
         if (!await context.Books.AnyAsync())
         {
             Console.WriteLine("Daha önce hiç aktarım yapılmamış. Lütfen önce 1. adımdan başlayınız!");
@@ -16,9 +15,7 @@ public class GetNewlyAddedBooks
         }
 
         HttpClient client = new HttpClient();
-        client.
-            DefaultRequestHeaders.
-            UserAgent.
+        client.DefaultRequestHeaders.UserAgent.
             ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36");
 
         string url = "https://www.kitapyurdu.com/index.php?route=product/category";
