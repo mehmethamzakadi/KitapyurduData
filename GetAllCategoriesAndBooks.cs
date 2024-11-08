@@ -10,7 +10,7 @@ public class GetAllCategoriesAndBooks
 {
     public static async Task Execute(BookLibraryContext context)
     {
-        HttpClient client = new HttpClient();
+        HttpClient client = new();
         client.
             DefaultRequestHeaders.
             UserAgent.
