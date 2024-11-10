@@ -1,4 +1,5 @@
 ﻿using HtmlAgilityPack;
+using KitapyurduData.Data.Models;
 using KitapYurduData.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -60,7 +61,33 @@ public class GetNewlyAddedBooks
                 int endTotalPages = resultsText.IndexOf("Sayfa", startTotalPages);
                 string totalPages = resultsText.Substring(startTotalPages, endTotalPages - startTotalPages).Trim();
 
-                var category = await context.Categories.Where(x => x.KitapyurduCategoryId == kitapYurduCategoryId).FirstOrDefaultAsync();
+                Category category = await context.Categories.Where(x => x.KitapyurduCategoryId == kitapYurduCategoryId).FirstOrDefaultAsync();
+
+                //Kategori daha önce yoksa ekle.
+                if (category == null)
+                {
+                    var newCategory = new Category
+                    {
+                        KitapyurduCategoryId = kitapYurduCategoryId,
+                        KitapyurduCategoryUrl = categoryUrl,
+                        Name = categoryName,
+                        PageCount = int.Parse(totalPages),
+                        ToplamKitapSayisi = int.Parse(totalBooks)
+                    };
+
+                    var newCategoryId = await context.Categories.AddAsync(newCategory);
+                    await context.SaveChangesAsync();
+                    category = newCategory;
+
+                    //Kategori hiç aktarılmamışsa
+                    await context.TransferInfos.AddAsync(new TransferInfo
+                    {
+                        EnSonKaldigiSayfa = int.Parse(totalPages),
+                        EnSonKaldigiKategoriId = newCategoryId.Entity.Id,
+                        TransferDurum = Enums.TransferDurum.Aktarilmamis
+                    });
+                    await context.SaveChangesAsync();
+                }
 
                 if ((categoryName != "Başvuru Kitapları" &&
                         categoryName != "Çocuk Kitapları" &&
@@ -85,9 +112,11 @@ public class GetNewlyAddedBooks
                     Console.WriteLine($"{category.Name} kategorisinde yeni eklenen {int.Parse(totalBooks) - category.ToplamKitapSayisi} adet kitap var. (İşlemler tamamlandıktan sonra 1. adımdan devam ediniz..)");
 
                     #region Kategoriyi Güncelle
+
                     context.Attach(category);
                     category.PageCount = int.Parse(totalPages);
                     category.ToplamKitapSayisi = int.Parse(totalBooks);
+
                     #endregion
 
                     #region En Son Hareket Güncelle

@@ -125,151 +125,167 @@ public class GetAllCategoriesAndBooks
         {
             try
             {
-                #region En Son Hareketi Bul
-                var ensonHareket = await context.TransferInfos
+                if (category.Name != "Başvuru Kitapları" &&
+                        category.Name != "Çocuk Kitapları" &&
+                        category.Name != "Ders Kitapları" &&
+                        category.Name != "Diğer" &&
+                        category.Name != "Diğer Dildeki Yayınlar" &&
+                        category.Name != "Din" &&
+                        category.Name != "İslam" &&
+                        category.Name != "Sınav" &&
+                        category.Name != "Puzzle - Yapboz" &&
+                        category.Name != "Kırtasiye" &&
+                        category.Name != "Dekorasyon" &&
+                        category.Name != "Aksesuar" &&
+                        category.Name != "Hobi ve Oyuncak" &&
+                        category.Name != "Çeşitli" &&
+                        category.Name != "Ahşap Ürünler")
+                {
+                    #region En Son Hareketi Bul
+                    var ensonHareket = await context.TransferInfos
                 .Where(x => x.EnSonKaldigiKategoriId == category.Id && x.TransferDurum != KitapyurduData.Enums.TransferDurum.Tamamlanmis)
                 .FirstOrDefaultAsync();
 
-                if (ensonHareket == null)
-                    continue;
-
-                ensonHareketId = ensonHareket.Id;
-                #endregion
-
-                for (int i = 1; i <= category.PageCount; i++)
-                {
-                    var bookList = new List<Book>();
-                    kacinciSayfada = i;
-
-                    #region Kaldığı Yere Gelene Kadar İlerle
-
-                    if (ensonHareket.EnSonKaldigiSayfa != category.PageCount &&
-                        ensonHareket.EnSonKaldigiSayfa > kacinciSayfada)
+                    if (ensonHareket == null)
                         continue;
+
+                    ensonHareketId = ensonHareket.Id;
                     #endregion
 
-                    #region Sayfayı Yükle
-                    var belgeUrl = $"https://www.kitapyurdu.com/index.php?route=product/category&filter_category_all=true&filter_in_stock=1&sort=publish_date&order=DESC&limit=100&path={category.KitapyurduCategoryId}&page={i}";
-                    var belgeResponse = await client.GetStringAsync(belgeUrl);
-
-                    HtmlDocument belge = new HtmlDocument();
-                    belge.LoadHtml(belgeResponse);
-                    #endregion
-
-                    var productNodes = belge.DocumentNode.SelectNodes("//div[@class='product-grid']/div[@class='product-cr']");
-                    if (productNodes != null)
+                    for (int i = 1; i <= category.PageCount; i++)
                     {
-                        foreach (var productNode in productNodes)
+                        var bookList = new List<Book>();
+                        kacinciSayfada = i;
+
+                        #region Kaldığı Yere Gelene Kadar İlerle
+
+                        if (ensonHareket.EnSonKaldigiSayfa != category.PageCount &&
+                            ensonHareket.EnSonKaldigiSayfa > kacinciSayfada)
+                            continue;
+                        #endregion
+
+                        #region Sayfayı Yükle
+                        var belgeUrl = $"https://www.kitapyurdu.com/index.php?route=product/category&filter_category_all=true&filter_in_stock=1&sort=publish_date&order=DESC&limit=100&path={category.KitapyurduCategoryId}&page={i}";
+                        var belgeResponse = await client.GetStringAsync(belgeUrl);
+
+                        HtmlDocument belge = new HtmlDocument();
+                        belge.LoadHtml(belgeResponse);
+                        #endregion
+
+                        var productNodes = belge.DocumentNode.SelectNodes("//div[@class='product-grid']/div[@class='product-cr']");
+                        if (productNodes != null)
                         {
-                            #region ProductId Al ve Eklenmiş Mi Kontrol Et
-                            //Daha önceden eklemişse ekleme, bir sonraki kayıttan devam et.
-                            int productId = 0;
-                            Match matchProductId = Regex.Match(productNode.Id, @"\d+");
-                            if (matchProductId.Success)
-                                productId = int.Parse(matchProductId.Value);
-
-                            if (await context.Books.AnyAsync(x => x.ProductId == productId))
-                                continue;
-                            #endregion
-
-                            #region Kitap Bilgilerini Al
-                            int pageCount = 0;
-                            DateTime publishDate = DateTime.Today;
-                            string language = string.Empty;
-                            string translator = string.Empty;
-                            string infoText = string.Empty;
-
-                            string imageUrl = productNode.SelectSingleNode(".//div[@class='image']/div[@class='cover']/a/img")?.GetAttributeValue("src", "");
-                            string bookName = productNode.SelectSingleNode(".//div[@class='name ellipsis']/a/span")?.InnerText.Trim();
-                            string publisher = productNode.SelectSingleNode(".//div[@class='publisher']/span/a/span")?.InnerText.Trim();
-                            string author = productNode.SelectSingleNode(".//div[@class='author']")?.InnerText.Trim().Replace("Yazar:", "").Trim();
-                            string productInfo = productNode.SelectSingleNode(".//div[@class='product-info']")?.InnerText.Trim();
-                            string price = productNode.SelectSingleNode(".//div[@class='price-new ']/span[@class='value']")?.InnerText.Trim() ?? "0";
-                            var raiting = int.Parse(Regex.Match(productNode.SelectSingleNode(".//div[@class='rating']/div")?.GetAttributeValue("title", ""), @"\d+").Value);
-
-                            var detailLink = productNode.SelectSingleNode(".//div[@class='name ellipsis']/a")?.Attributes[0].Value;
-                            if (!string.IsNullOrEmpty(detailLink))
+                            foreach (var productNode in productNodes)
                             {
-                                var detailResponse = await client.GetStringAsync(detailLink);
-                                HtmlDocument detailDocument = new HtmlDocument();
-                                detailDocument.LoadHtml(detailResponse);
+                                #region ProductId Al ve Eklenmiş Mi Kontrol Et
+                                //Daha önceden eklemişse ekleme, bir sonraki kayıttan devam et.
+                                int productId = 0;
+                                Match matchProductId = Regex.Match(productNode.Id, @"\d+");
+                                if (matchProductId.Success)
+                                    productId = int.Parse(matchProductId.Value);
 
-                                var infoTextNodes = detailDocument.DocumentNode.SelectNodes("//span[@class='info__text']");
-                                infoText = infoTextNodes?.FirstOrDefault()?.InnerText.Trim();
+                                if (await context.Books.AnyAsync(x => x.ProductId == productId))
+                                    continue;
+                                #endregion
 
-                                var attributesNode = detailDocument.DocumentNode.SelectSingleNode("//div[@class='attributes']");
-                                if (attributesNode != null)
+                                #region Kitap Bilgilerini Al
+                                int pageCount = 0;
+                                DateTime publishDate = DateTime.Today;
+                                string language = string.Empty;
+                                string translator = string.Empty;
+                                string infoText = string.Empty;
+
+                                string imageUrl = productNode.SelectSingleNode(".//div[@class='image']/div[@class='cover']/a/img")?.GetAttributeValue("src", "");
+                                string bookName = productNode.SelectSingleNode(".//div[@class='name ellipsis']/a/span")?.InnerText.Trim();
+                                string publisher = productNode.SelectSingleNode(".//div[@class='publisher']/span/a/span")?.InnerText.Trim();
+                                string author = productNode.SelectSingleNode(".//div[@class='author']")?.InnerText.Trim().Replace("Yazar:", "").Trim();
+                                string productInfo = productNode.SelectSingleNode(".//div[@class='product-info']")?.InnerText.Trim();
+                                string price = productNode.SelectSingleNode(".//div[@class='price-new ']/span[@class='value']")?.InnerText.Trim() ?? "0";
+                                var raiting = int.Parse(Regex.Match(productNode.SelectSingleNode(".//div[@class='rating']/div")?.GetAttributeValue("title", ""), @"\d+").Value);
+
+                                var detailLink = productNode.SelectSingleNode(".//div[@class='name ellipsis']/a")?.Attributes[0].Value;
+                                if (!string.IsNullOrEmpty(detailLink))
                                 {
-                                    foreach (var row in attributesNode.SelectNodes(".//tr"))
-                                    {
-                                        var cells = row.SelectNodes("td");
-                                        if (cells != null && cells.Count == 2)
-                                        {
-                                            string attributeName = cells[0].InnerText.Trim();
-                                            string attributeValue = cells[1].InnerText.Trim();
+                                    var detailResponse = await client.GetStringAsync(detailLink);
+                                    HtmlDocument detailDocument = new HtmlDocument();
+                                    detailDocument.LoadHtml(detailResponse);
 
-                                            if (attributeName.StartsWith("Dil"))
-                                                language = attributeValue;
-                                            else if (attributeName.StartsWith("Sayfa"))
-                                                pageCount = int.TryParse(attributeValue, out var pages) ? pages : 0;
-                                            else if (attributeName.StartsWith("Çevirmen"))
-                                                translator = attributeValue;
-                                            else if (attributeName.StartsWith("Yayın"))
+                                    var infoTextNodes = detailDocument.DocumentNode.SelectNodes("//span[@class='info__text']");
+                                    infoText = infoTextNodes?.FirstOrDefault()?.InnerText.Trim();
+
+                                    var attributesNode = detailDocument.DocumentNode.SelectSingleNode("//div[@class='attributes']");
+                                    if (attributesNode != null)
+                                    {
+                                        foreach (var row in attributesNode.SelectNodes(".//tr"))
+                                        {
+                                            var cells = row.SelectNodes("td");
+                                            if (cells != null && cells.Count == 2)
                                             {
-                                                var dateParts = attributeValue.Split(".");
-                                                publishDate = new DateTime(
-                                                    int.Parse(dateParts[2]),
-                                                    int.Parse(dateParts[1]),
-                                                    int.Parse(dateParts[0]));
+                                                string attributeName = cells[0].InnerText.Trim();
+                                                string attributeValue = cells[1].InnerText.Trim();
+
+                                                if (attributeName.StartsWith("Dil"))
+                                                    language = attributeValue;
+                                                else if (attributeName.StartsWith("Sayfa"))
+                                                    pageCount = int.TryParse(attributeValue, out var pages) ? pages : 0;
+                                                else if (attributeName.StartsWith("Çevirmen"))
+                                                    translator = attributeValue;
+                                                else if (attributeName.StartsWith("Yayın"))
+                                                {
+                                                    var dateParts = attributeValue.Split(".");
+                                                    publishDate = new DateTime(
+                                                        int.Parse(dateParts[2]),
+                                                        int.Parse(dateParts[1]),
+                                                        int.Parse(dateParts[0]));
+                                                }
                                             }
                                         }
                                     }
                                 }
+                                #endregion
+
+                                bookList.Add(new Book
+                                {
+                                    AuthorName = author,
+                                    PublisherName = publisher,
+                                    BookName = bookName,
+                                    ImageUrl = imageUrl,
+                                    CoverText = infoText,
+                                    Language = language,
+                                    PageCount = pageCount,
+                                    Price = decimal.Parse(price),
+                                    ProductId = productId,
+                                    ProductInfo = productInfo,
+                                    PublishDate = publishDate,
+                                    Rating = raiting,
+                                    Translator = translator,
+                                    CategoryId = category.Id,
+                                });
                             }
+
+                            await context.Books.AddRangeAsync(bookList);
+
+                            #region En Son Hareket Güncelle
+                            // Enson hareket nesnesini bağlayarak güncelleme
+                            context.Attach(ensonHareket);
+                            ensonHareket.EnSonKaldigiSayfa = kacinciSayfada;
+                            ensonHareket.TransferDurum = KitapyurduData.Enums.TransferDurum.YarimKalmis;
                             #endregion
 
-                            bookList.Add(new Book
-                            {
-                                AuthorName = author,
-                                PublisherName = publisher,
-                                BookName = bookName,
-                                ImageUrl = imageUrl,
-                                CoverText = infoText,
-                                Language = language,
-                                PageCount = pageCount,
-                                Price = decimal.Parse(price),
-                                ProductId = productId,
-                                ProductInfo = productInfo,
-                                PublishDate = publishDate,
-                                Rating = raiting,
-                                Translator = translator,
-                                CategoryId = category.Id,
-                            });
+                            await context.SaveChangesAsync();
+
+                            Console.WriteLine($"Eklenen Kategori: {category.Name} - Eklenen Sayfa: {kacinciSayfada} - Kalan Sayfa: {category.PageCount - kacinciSayfada}");
+
                         }
-
-                        await context.Books.AddRangeAsync(bookList);
-
-                        #region En Son Hareket Güncelle
-                        // Enson hareket nesnesini bağlayarak güncelleme
-                        context.Attach(ensonHareket);
-                        ensonHareket.EnSonKaldigiSayfa = kacinciSayfada;
-                        ensonHareket.TransferDurum = KitapyurduData.Enums.TransferDurum.YarimKalmis;
-                        #endregion
-
-                        await context.SaveChangesAsync();
-
-                        Console.WriteLine($"Eklenen Kategori: {category.Name} - Eklenen Sayfa: {kacinciSayfada} - Kalan Sayfa: {category.PageCount - kacinciSayfada}");
-
                     }
+
+                    #region En Son Hareket Güncelle
+                    //Kategori hatasız şekilde aktarılmışsa
+                    context.Attach(ensonHareket);
+                    ensonHareket.TransferDurum = KitapyurduData.Enums.TransferDurum.Tamamlanmis;
+                    await context.SaveChangesAsync();
+                    #endregion
                 }
-
-                #region En Son Hareket Güncelle
-                //Kategori hatasız şekilde aktarılmışsa
-                context.Attach(ensonHareket);
-                ensonHareket.TransferDurum = KitapyurduData.Enums.TransferDurum.Tamamlanmis;
-                await context.SaveChangesAsync();
-                #endregion
-
             }
             catch (Exception)
             {
