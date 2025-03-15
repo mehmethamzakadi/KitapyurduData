@@ -89,7 +89,7 @@ public class GetNewlyAddedBooks
                     await context.SaveChangesAsync();
                 }
 
-                if ((categoryName != "Başvuru Kitapları" &&
+                if ((/*categoryName != "Başvuru Kitapları" &&
                         categoryName != "Çocuk Kitapları" &&
                         categoryName != "Ders Kitapları" &&
                         categoryName != "Diğer" &&
@@ -103,7 +103,7 @@ public class GetNewlyAddedBooks
                         categoryName != "Aksesuar" &&
                         categoryName != "Hobi ve Oyuncak" &&
                         categoryName != "Çeşitli" &&
-                        categoryName != "Ahşap Ürünler" &&
+                        categoryName != "Ahşap Ürünler" &&*/
                         category.ToplamKitapSayisi < int.Parse(totalBooks)))
                 {
                     // Sayfa sayısı ve toplam kitap sayısını güncelle
